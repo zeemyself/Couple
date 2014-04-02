@@ -16,7 +16,8 @@
             'src/Maze.js',
             'src/Player.js',
             'src/Goal.js',
-            'src/Resources.js'
+            'src/Resources.js',
+            'src/Gameover.js'
                 //add your own files in order here
         ]
     };

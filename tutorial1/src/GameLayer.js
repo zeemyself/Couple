@@ -62,11 +62,16 @@ var GameLayer = cc.LayerColor.extend({
     update : function (){
          if(this.playerA.getDirectionX() == 380 && this.playerA.getDirectionY() == 260)
                 if(this.playerB.getDirectionX() == 420 && this.playerB.getDirectionY() == 260)
-            this.endgame();
+                     this.endgame();
     },
     endgame: function(){
         this.unscheduleUpdate();
         this.setKeyboardEnabled(false);
+        this.removeChild(this.maze);
+        // this.addChild('iamges/gameover.jpg');
+        this.Gameover = new Gameover();
+        this.Gameover.setPosition(cc.p(500, 400));
+        this.addChild( this.Gameover );
         console.log("FINISHHHH");
     }
 
