@@ -25,6 +25,11 @@ var GameLayer = cc.LayerColor.extend({
 
         this.scheduleUpdate();
 
+        this.time = 1000;
+        this.timeLabel = cc.LabelTTF.create ('0' , 'Arial', 40);
+        this.timeLabel.setPosition( new cc.Point(500,500));
+        this.addChild(this.timeLabel);
+
         return true;
     },
     setDirection : function ( dir ){
@@ -63,6 +68,15 @@ var GameLayer = cc.LayerColor.extend({
          if(this.playerA.getDirectionX() == 380 && this.playerA.getDirectionY() == 260)
                 if(this.playerB.getDirectionX() == 420 && this.playerB.getDirectionY() == 260)
                      this.endgame();
+
+
+    this.time--;
+    this.timeLabel.setString("Time left : "+ parseInt(this.time)/100);
+     if(this.time <= 0){
+        this.unscheduleUpdate();
+        this.endgame();
+     }
+
     },
     endgame: function(){
         this.unscheduleUpdate();
