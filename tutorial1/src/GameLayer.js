@@ -1,10 +1,13 @@
 var GameLayer = cc.LayerColor.extend({
     init: function() {
+        this.stage = 1;
+        this.gameend = false;
+
         this.setKeyboardEnabled(true);
         this._super( new cc.Color4B( 127, 127, 127, 255 ) );
         this.setPosition( new cc.Point( 0, 0 ) );
 
-        this.maze = new Maze();
+        this.maze = new Maze(this.stage);
         this.maze.setPosition( cc.p( 0, 40));
         this.addChild( this.maze );
 
@@ -25,7 +28,7 @@ var GameLayer = cc.LayerColor.extend({
 
         this.scheduleUpdate();
 
-        this.time = 1000;
+        this.time = 19000;
         this.timeLabel = cc.LabelTTF.create ('0' , 'Arial', 40);
         this.timeLabel.setPosition( new cc.Point(500,500));
         this.addChild(this.timeLabel);
@@ -57,6 +60,11 @@ var GameLayer = cc.LayerColor.extend({
             console.log(this.playerB.getDirectionX());
             console.log(this.playerB.getDirectionY());
         }
+
+        if (this.gameend) {
+            this.stage++;
+            this.startGame();
+        }
         // this.check();
     },     
     onKeyUp : function (e){
@@ -79,14 +87,25 @@ var GameLayer = cc.LayerColor.extend({
 
     },
     endgame: function(){
+        this.gameend = true;
         this.unscheduleUpdate();
-        this.setKeyboardEnabled(false);
+        // this.setKeyboardEnabled(false);
         this.removeChild(this.maze);
         // this.addChild('iamges/gameover.jpg');
         this.Gameover = new Gameover();
         this.Gameover.setPosition(cc.p(500, 400));
         this.addChild( this.Gameover );
+
         console.log("FINISHHHH");
+    },
+    startGame : function(){
+        this.endgame = false;
+        this.scheduleUpdate();
+        this.removeChild( this.Gameover );
+
+        this.maze = new Maze(this.stage);
+        this.maze.setPosition( cc.p( 0, 40));
+        this.addChild( this.maze );
     }
 
 });
