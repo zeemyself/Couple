@@ -28,7 +28,7 @@ var GameLayer = cc.LayerColor.extend({
 
         this.scheduleUpdate();
 
-        this.time = 19000;
+        this.time = 1000;
         this.timeLabel = cc.LabelTTF.create ('0' , 'Arial', 40);
         this.timeLabel.setPosition( new cc.Point(500,500));
         this.addChild(this.timeLabel);
@@ -85,6 +85,9 @@ var GameLayer = cc.LayerColor.extend({
         this.endgame();
      }
 
+    },
+    setTime : function (t){
+        this.time = t;
     },
     endgame: function(){
         this.gameend = true;
