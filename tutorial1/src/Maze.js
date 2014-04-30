@@ -46,17 +46,32 @@ var Maze = cc.Node.extend({
             '#.#...#......#...#.#',
             '#.#######..###.###.#',
             '#.#..............#.#',
-            '####################']
+            '####################'],
+
+            ['####################',
+            '#..................#',
+            '##########.#######.#',
+            '#.#...#......#...#.#',
+            '#.#.###.####.###.#.#',
+            '#.#.#..........#.#.#',
+            '#.....###. ###.#.#.#',
+            '#.#.#..........#...#',
+            '#.#.###O####.###.#.#',
+            '#.#...#......#...#.#',
+            '#.########.#######.#',
+            '#.#................#',
+            '####################'
+            ]
             ];
 
 		for ( var r = 0; r < this.HEIGHT; r++ ) {
 	   		 for ( var c = 0; c < this.WIDTH; c++ ) {
-				if ( this.MAP[stage-1][ r ][ c ] == '#' ) {
+				if ( this.MAP[this.stage-1][ r ][ c ] == '#' ) {
 		    var s = cc.Sprite.create( 'images/wall.png' );
 		    s.setAnchorPoint( cc.p( 0, 0 ) );
 		    s.setPosition( cc.p( c * 40, (this.HEIGHT - r - 1) * 40 ) );
 		    this.addChild( s );
-		} else if ( this.MAP[stage-1][r][c] == 'O'){
+		} else if ( this.MAP[this.stage-1][r][c] == 'O'){
 			var s = cc.Sprite.create( 'images/tree.jpg' );
 		    s.setAnchorPoint( cc.p( 0, 0 ) );
 		    s.setPosition( cc.p( c * 40, (this.HEIGHT - r - 1) * 40 ) );
