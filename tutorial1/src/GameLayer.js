@@ -3,15 +3,20 @@ var GameLayer = cc.LayerColor.extend({
     init: function() {
         this.stageLabel = "";
         this.stage = 1;
+        this.game = 1;
         this.gameend = false;
 
         this.setKeyboardEnabled(true);
         this._super( new cc.Color4B( 127, 127, 127, 255 ) );
         this.setPosition( new cc.Point( 0, 0 ) );
 
-        this.BF = cc.Sprite.create( 'images/castle4.jpg' );
-        this.BF.setPosition( cc.p(400,300));
-        this.addChild(this.BF);
+        // this.BF = cc.Sprite.create( 'images/resizecastle.jpg' );
+        // this.BF.setPosition( cc.p(400,300));
+        // this.addChild(this.BF);
+
+        this.clock = cc.Sprite.create( 'images/clock.png');
+        this.clock.setPosition( cc.p(870,520));
+        this.addChild(this.clock);
         // this.maze = new Maze(this.stage);
         // this.maze.setPosition( cc.p( 0, 40));
         // this.addChild( this.maze );
@@ -36,7 +41,8 @@ var GameLayer = cc.LayerColor.extend({
 
         this.time = 1000;
         this.timeLabel = cc.LabelTTF.create (' ' , 'Arial', 40);
-        this.timeLabel.setPosition( new cc.Point(500,570));
+        this.timeLabel.setPosition( new cc.Point(870,500));
+        this.timeLabel.setColor( cc.RED);
         this.addChild(this.timeLabel);
 
         this.stageLabel = cc.LabelTTF.create (' ' , 'Arial', 30);
@@ -72,7 +78,7 @@ var GameLayer = cc.LayerColor.extend({
             this.startGame();
             break;
         case cc.KEY.space:
-            this.removeChild(this.text);
+            this.removeChild(this.menu);
             this.startGame();
             break;
         case cc.KEY.alt:
@@ -98,10 +104,10 @@ var GameLayer = cc.LayerColor.extend({
 
 
     this.time--;
-    this.timeLabel.setString("Time left : "+ parseInt(this.time)/100);
+    this.timeLabel.setString(Math.floor(parseInt(this.time)/100));
      
     // var number = this.stage;
-    this.stageLabel.setString("Stage :"+this.stage);
+    this.stageLabel.setString("Stage :"+this.game);
 
      if(this.time <= 0){
         this.unscheduleUpdate();
@@ -154,7 +160,7 @@ var GameLayer = cc.LayerColor.extend({
         }
         this.scheduleUpdate();
 
-        this.maze = new Maze(this.stage);
+        this.maze = new Maze(this.game);
         this.maze.setPosition( cc.p( 0, 40));
         this.addChild( this.maze );
 
@@ -178,6 +184,7 @@ var GameLayer = cc.LayerColor.extend({
 
     },
     nextStage : function (){
+        this.game++;
         this.stage = this.stage + 1;
         console.log("Addd stage leaw na");
         // this.update();
@@ -190,11 +197,11 @@ var GameLayer = cc.LayerColor.extend({
         // this.addChild(this.menu);
         this.setKeyboardEnabled(true);
         
-        this.text = cc.LabelTTF.create('0','Arial',40);
-        this.text.setPosition( new cc.Point( 300,300));
-        this.addChild(this.text);
+        this.menu = cc.Sprite.create( 'images/welcome.png' );        
+        this.menu.setPosition( new cc.Point( 475,300));
+        this.addChild(this.menu);
 
-        this.text.setString("Press SPACEBAR to start game");
+        // this.text.setString("Press SPACEBAR to start game");
     }
 
 });
