@@ -1,4 +1,5 @@
 var GameLayer = cc.LayerColor.extend({
+    // this.stage = 1;
     init: function() {
         this.stageLabel = "";
         this.stage = 1;
@@ -8,6 +9,9 @@ var GameLayer = cc.LayerColor.extend({
         this._super( new cc.Color4B( 127, 127, 127, 255 ) );
         this.setPosition( new cc.Point( 0, 0 ) );
 
+        this.BF = cc.Sprite.create( 'images/castle4.jpg' );
+        this.BF.setPosition( cc.p(400,300));
+        this.addChild(this.BF);
         // this.maze = new Maze(this.stage);
         // this.maze.setPosition( cc.p( 0, 40));
         // this.addChild( this.maze );
@@ -31,11 +35,11 @@ var GameLayer = cc.LayerColor.extend({
         this.createMenu();
 
         this.time = 1000;
-        this.timeLabel = cc.LabelTTF.create ('0' , 'Arial', 40);
+        this.timeLabel = cc.LabelTTF.create (' ' , 'Arial', 40);
         this.timeLabel.setPosition( new cc.Point(500,570));
         this.addChild(this.timeLabel);
 
-        this.stageLabel = cc.LabelTTF.create ('0' , 'Arial', 30);
+        this.stageLabel = cc.LabelTTF.create (' ' , 'Arial', 30);
         this.stageLabel.setPosition( new cc.Point(200,570));
         this.addChild(this.stageLabel);
 
@@ -96,8 +100,8 @@ var GameLayer = cc.LayerColor.extend({
     this.time--;
     this.timeLabel.setString("Time left : "+ parseInt(this.time)/100);
      
-    var number = this.stage;
-    this.stageLabel.setString("Stage :"+number);
+    // var number = this.stage;
+    this.stageLabel.setString("Stage :"+this.stage);
 
      if(this.time <= 0){
         this.unscheduleUpdate();
@@ -138,19 +142,19 @@ var GameLayer = cc.LayerColor.extend({
         console.log(this.stage);
     },
     startGame : function(){
-        var number = this.stage;
+        // var number = this.stage;
        
        // console.log(number);
         if(this.stage = 2)
             this.setTime(2000);
         this.gameend = false;
-        if(number != 1 ){
+        if(this.stage != 1 ){
         // this.scheduleUpdate();
         this.removeChild( this.Gameover );
         }
         this.scheduleUpdate();
 
-        this.maze = new Maze(number);
+        this.maze = new Maze(this.stage);
         this.maze.setPosition( cc.p( 0, 40));
         this.addChild( this.maze );
 
@@ -174,7 +178,8 @@ var GameLayer = cc.LayerColor.extend({
 
     },
     nextStage : function (){
-        this.stage++;
+        this.stage = this.stage + 1;
+        console.log("Addd stage leaw na");
         // this.update();
     },
     createMenu : function (){
