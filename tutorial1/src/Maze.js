@@ -99,5 +99,10 @@ var Maze = cc.Node.extend({
 		var r = this.HEIGHT - blockY - 1;
 		var c = blockX;
 		return (this.MAP[(this.stage)-1] [ r ][ c ] == '#' || this.MAP[(this.stage)-1] [r][c] == 'O');
-	}
+	},
+    isMario : function(blockX,blockY){
+        var r = this.HEIGHT - blockY - 1;
+        var c = blockX;
+        return this.MAP[(this.stage)-1] [r][c] == 'O';
+    }
 });
