@@ -1,9 +1,10 @@
 var GameLayer = cc.LayerColor.extend({
     // this.stage = 1;
     init: function() {
+        this.firsttime = true;
         this.stageLabel = "";
         this.stage = 1;
-        this.game = 4;
+        this.game = 1;
         this.gameend = false;
         this.gametime = [5,10,40,30,40,60];
         this.setKeyboardEnabled(true);
@@ -79,8 +80,11 @@ var GameLayer = cc.LayerColor.extend({
             this.removeChild(this.Gameover);
             break;
         case cc.KEY.space:
+        if(this.firsttime){
             this.removeChild(this.menu);
             this.startGame();
+            this.firsttime = false;
+        }
             break;
         case cc.KEY.alt:
             cc.log("now stage : "+this.stage);
@@ -102,6 +106,8 @@ var GameLayer = cc.LayerColor.extend({
                      this.endgame();
                  }
              }
+         if(this.playerA.isDead() || this.playerB.isDead())
+            this.dead();
 
 
     this.time--;
@@ -205,6 +211,16 @@ var GameLayer = cc.LayerColor.extend({
         this.addChild(this.menu);
 
         // this.text.setString("Press SPACEBAR to start game");
+    },
+    dead : function (){
+         this.gameend = true;
+        this.unscheduleUpdate();
+
+        this.removeChild(this.maze);
+
+        this.Gameover = new Gameover(3);
+        this.Gameover.setPosition(cc.p(470, 300));
+        this.addChild( this.Gameover );
     }
 
 });

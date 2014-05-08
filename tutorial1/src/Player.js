@@ -40,6 +40,8 @@ var Player = cc.Sprite.extend({
             break;
         }
         this.updatePosition();
+
+
       // console.log("x :" + this.x);
        // console.log("y :" + this.y);
 	},
@@ -82,6 +84,11 @@ var Player = cc.Sprite.extend({
 				break;
 		}
 		return ! this.maze.isWall( this.nextBlockX, this.nextBlockY );
+	},
+	isDead : function (){
+		var r = Math.round(( this.x - 20 ) / 40);
+		var t = Math.round(( this.y - 20 ) / 40);
+		return  this.maze.isMario(r,t);
 	}
 	
 });

@@ -67,12 +67,12 @@ var Maze = cc.Node.extend({
               ['####################',
                '#..................#',
                '#.############.#####',
-               '#.#.#...#....#.....#',
+               '#.#.#...#O...#.....#',
                '#...###.#..#.#####.#',
                '#.#.#......#.#.....#',
-               '#...#.###..#....####',
+               '#...#.###..#.O..####',
                '#.#.#.#....#.#.....#',
-               '#.#.#.#.#..#######.#',
+               '#.#.#.#.#..#.#####.#',
                '#.#...#.##.#.......#',
                '#.#.#...#..#######.#',
                '#.#.########.......#',
@@ -105,11 +105,17 @@ var Maze = cc.Node.extend({
 	isWall : function( blockX, blockY){
 		var r = this.HEIGHT - blockY - 1;
 		var c = blockX;
-		return (this.MAP[(this.stage)-1] [ r ][ c ] == '#' || this.MAP[(this.stage)-1] [r][c] == 'O');
+        // console.log("Wall : " +r + " / "+ c);
+		return (this.MAP[(this.stage)-1] [ r ][ c ] == '#' );
 	},
     isMario : function(blockX,blockY){
         var r = this.HEIGHT - blockY - 1;
         var c = blockX;
-        return this.MAP[(this.stage)-1] [r][c] == 'O';
+        // var x = this.keep;
+        // return x == 'O';
+        // return this.MAP[(this.stage)-1] [r][c] == 'O';
+        // console.log("Mario : "+r + " / "+ c);
+        return (this.MAP[(this.stage)-1] [ r ][ c ]) == 'O' ;
+        // return true;
     }
 });
