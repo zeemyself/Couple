@@ -3,9 +3,9 @@ var GameLayer = cc.LayerColor.extend({
     init: function() {
         this.stageLabel = "";
         this.stage = 1;
-        this.game = 1;
+        this.game = 4;
         this.gameend = false;
-
+        this.gametime = [5,10,40,30,40,60];
         this.setKeyboardEnabled(true);
         this._super( new cc.Color4B( 127, 127, 127, 255 ) );
         this.setPosition( new cc.Point( 0, 0 ) );
@@ -39,7 +39,7 @@ var GameLayer = cc.LayerColor.extend({
         // this.scheduleUpdate();
         this.createMenu();
 
-        this.time = 1000;
+        // this.time = 1000;
         this.timeLabel = cc.LabelTTF.create (' ' , 'Arial', 40);
         this.timeLabel.setPosition( new cc.Point(870,500));
         this.timeLabel.setColor( cc.RED);
@@ -76,6 +76,7 @@ var GameLayer = cc.LayerColor.extend({
         case cc.KEY.enter:
             if(this.gameend)
             this.startGame();
+            this.removeChild(this.Gameover);
             break;
         case cc.KEY.space:
             this.removeChild(this.menu);
@@ -116,7 +117,7 @@ var GameLayer = cc.LayerColor.extend({
 
     },
     setTime : function (t){
-        this.time = t;
+        this.time = t * 100;
     },
     gameOver : function (){
         this.gameend = true;
@@ -151,14 +152,16 @@ var GameLayer = cc.LayerColor.extend({
         // var number = this.stage;
        
        // console.log(number);
-        if(this.stage = 2)
-            this.setTime(2000);
+        // if(this.stage = 2)
+        //     this.setTime(2000);
         this.gameend = false;
         if(this.stage != 1 ){
         // this.scheduleUpdate();
         this.removeChild( this.Gameover );
         }
         this.scheduleUpdate();
+
+        this.setTime(this.gametime[this.game-1]);
 
         this.maze = new Maze(this.game);
         this.maze.setPosition( cc.p( 0, 40));
