@@ -1,27 +1,630 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>My Game</title>
-    <link rel="icon" type="image/GIF" href="res/favicon.ico"/>
-    <meta name="viewport" content="width=800,target-densitydpi=device-dpi,user-scalable=no" />
-    <meta name="apple-mobile-web-app-capable" content="yes"/>
-    <meta name="full-screen" content="yes"/>
-    <meta name="screen-orientation" content="portrait"/>
-    <meta name="x5-fullscreen" content="true"/>
-    <meta name="360-fullscreen" content="true"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Couple - Maze Game</title>
     <style>
-        body, canvas, div {
-            -moz-user-select: none;
-            -webkit-user-select: none;
-            -ms-user-select: none;
-            -khtml-user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+        }
+        canvas {
+            display: block;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0, 150, 255, 0.3);
+        }
+        #instructions {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #888;
+            font-family: sans-serif;
+            font-size: 14px;
+            white-space: nowrap;
         }
     </style>
 </head>
-<body style="padding:0; margin: 0; background: #000;">
-<canvas id="gameCanvas" width="950" height="600"></canvas>
-<script src="cocos2d.js"></script>
+<body>
+    <div id="gameContainer">
+        <canvas id="game" width="950" height="600"></canvas>
+        <div id="instructions">Arrow Keys / WASD: Move players | SPACE: Start | ENTER: Restart</div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ==================== GAME CONFIGURATION ====================
+        const CONFIG = {
+            CANVAS_WIDTH: 950,
+            CANVAS_HEIGHT: 600,
+            MAZE_OFFSET_X: 0,
+            MAZE_OFFSET_Y: 40,
+            TILE_SIZE: 40,
+            MOVE_STEP: 5,
+            GAME_TIMES: [60, 60, 60, 60] // Time in seconds per stage
+        };
+
+        // ==================== MAZE DATA ====================
+        const MAZES = [
+            // Stage 1
+            [
+                '####################',
+                '#..................#',
+                '#.###.###..###.###.#',
+                '#.#...#.O....#...#.#',
+                '#.#.###.####.###.#.#',
+                '#.#.#..........#.#.#',
+                '#.....###..###.....#',
+                '#.#.#..........#.#.#',
+                '#.#.###O####.###.#.#',
+                '#.#...#......#...#.#',
+                '#.###.###..###.###O#',
+                '#..................#',
+                '####################'
+            ],
+            // Stage 2
+            [
+                '####################',
+                '#.###............#.#',
+                '#.###.###..###.###.#',
+                '#.#...#......#...#.#',
+                '#.#.###.####.###.#.#',
+                '#.#.#..........#.#.#',
+                '#.....###..###.#.#.#',
+                '#.#.#..........#...#',
+                '#.#.###O####.###.#.#',
+                '#.#...#......#...#.#',
+                '#.#######..###.###.#',
+                '#.#..............#.#',
+                '####################'
+            ],
+            // Stage 3
+            [
+                '####################',
+                '#.##.#.OOO..##.#.#.#',
+                '#.##.#.OOO..##...#.#',
+                '#.##...OOO.#.#.#.#.#',
+                '#.##.#.OOO##.#.#.#.#',
+                '#.#..#...#.#.#.#.#.#',
+                '#..#.#.......#.#.#.#',
+                '#.#..####.##...#.#.#',
+                '#.##..OOO##.##.#.#.#',
+                '#.##O........#.#.#.#',
+                '#..#OOO####.##.#...#',
+                '#............O.#.#.#',
+                '####################'
+            ],
+            // Stage 4
+            [
+                '####################',
+                '#..................#',
+                '#.############.#####',
+                '#.#.#...#O...#.....#',
+                '#...###.#..#.#####.#',
+                '#.#.#......#.#.....#',
+                '#...#.###..#.O..####',
+                '#.#.#.#....#.#.....#',
+                '#.#.#.#.#..#.#####.#',
+                '#.#...#.##.#.......#',
+                '#.#.#...#..#######.#',
+                '#.#.########.......#',
+                '####################'
+            ]
+        ];
+
+        // ==================== GAME STATE ====================
+        const GameState = {
+            MENU: 'menu',
+            PLAYING: 'playing',
+            GAMEOVER_TIME: 'gameover_time',
+            GAMEOVER_DEAD: 'gameover_dead',
+            STAGE_COMPLETE: 'stage_complete'
+        };
+
+        // ==================== DIRECTION ====================
+        const Direction = {
+            STILL: 0,
+            LEFT: 1,
+            RIGHT: 2,
+            UP: 3,
+            DOWN: 4
+        };
+
+        // ==================== IMAGE LOADER ====================
+        class ImageLoader {
+            constructor() {
+                this.images = {};
+                this.loaded = 0;
+                this.total = 0;
+                this.onReady = null;
+            }
+
+            load(name, src) {
+                this.total++;
+                const img = new Image();
+                img.onload = () => {
+                    this.loaded++;
+                    if (this.loaded === this.total && this.onReady) {
+                        this.onReady();
+                    }
+                };
+                img.onerror = () => {
+                    console.warn(`Failed to load image: ${src}`);
+                    this.loaded++;
+                    if (this.loaded === this.total && this.onReady) {
+                        this.onReady();
+                    }
+                };
+                img.src = src;
+                this.images[name] = img;
+                return this;
+            }
+
+            get(name) {
+                return this.images[name];
+            }
+
+            isReady() {
+                return this.loaded === this.total;
+            }
+        }
+
+        // ==================== PLAYER CLASS ====================
+        class Player {
+            constructor(x, y, playerNum, maze) {
+                this.x = x;
+                this.y = y;
+                this.playerNum = playerNum;
+                this.maze = maze;
+                this.direction = Direction.STILL;
+                this.nextDirection = Direction.STILL;
+            }
+
+            isAtCenter() {
+                return (this.x + 20) % 40 === 0 && (this.y + 20) % 40 === 0;
+            }
+
+            isPossibleToMove(dir) {
+                if (dir === Direction.STILL) return true;
+
+                let nextBlockX = (this.x - 20) / 40;
+                let nextBlockY = (this.y - 20) / 40;
+
+                switch (dir) {
+                    case Direction.UP: nextBlockY += 1; break;
+                    case Direction.DOWN: nextBlockY -= 1; break;
+                    case Direction.LEFT: nextBlockX -= 1; break;
+                    case Direction.RIGHT: nextBlockX += 1; break;
+                }
+
+                return !this.maze.isWall(nextBlockX, nextBlockY);
+            }
+
+            update() {
+                if (this.isAtCenter()) {
+                    if (!this.isPossibleToMove(this.nextDirection)) {
+                        this.nextDirection = Direction.STILL;
+                    }
+                    this.direction = this.nextDirection;
+                }
+
+                switch (this.direction) {
+                    case Direction.UP: this.y += CONFIG.MOVE_STEP; break;
+                    case Direction.DOWN: this.y -= CONFIG.MOVE_STEP; break;
+                    case Direction.LEFT: this.x -= CONFIG.MOVE_STEP; break;
+                    case Direction.RIGHT: this.x += CONFIG.MOVE_STEP; break;
+                }
+            }
+
+            isDead() {
+                const blockX = Math.round((this.x - 20) / 40);
+                const blockY = Math.round((this.y - 20) / 40);
+                return this.maze.isHazard(blockX, blockY);
+            }
+
+            draw(ctx, images) {
+                const img = this.playerNum === 1 ? images.get('player1') : images.get('player2');
+                if (img && img.complete) {
+                    ctx.drawImage(img, this.x - 20, CONFIG.CANVAS_HEIGHT - this.y - 60);
+                } else {
+                    // Fallback: draw colored circle
+                    ctx.fillStyle = this.playerNum === 1 ? '#ff6b6b' : '#4ecdc4';
+                    ctx.beginPath();
+                    ctx.arc(this.x, CONFIG.CANVAS_HEIGHT - this.y - 40, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.playerNum, this.x, CONFIG.CANVAS_HEIGHT - this.y - 36);
+                }
+            }
+        }
+
+        // ==================== MAZE CLASS ====================
+        class Maze {
+            constructor(stage) {
+                this.stage = stage;
+                this.map = MAZES[stage - 1] || MAZES[0];
+                this.height = this.map.length;
+                this.width = this.map[0].length;
+            }
+
+            isWall(blockX, blockY) {
+                const r = this.height - blockY - 1;
+                const c = blockX;
+                if (r < 0 || r >= this.height || c < 0 || c >= this.width) return true;
+                return this.map[r][c] === '#';
+            }
+
+            isHazard(blockX, blockY) {
+                const r = this.height - blockY - 1;
+                const c = blockX;
+                if (r < 0 || r >= this.height || c < 0 || c >= this.width) return false;
+                return this.map[r][c] === 'O';
+            }
+
+            draw(ctx, images) {
+                const wallImg = images.get('wall');
+                const waterImg = images.get('water');
+
+                for (let r = 0; r < this.height; r++) {
+                    for (let c = 0; c < this.width; c++) {
+                        const screenX = CONFIG.MAZE_OFFSET_X + c * CONFIG.TILE_SIZE;
+                        const screenY = CONFIG.MAZE_OFFSET_Y + r * CONFIG.TILE_SIZE;
+
+                        if (this.map[r][c] === '#') {
+                            if (wallImg && wallImg.complete) {
+                                ctx.drawImage(wallImg, screenX, screenY, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                            } else {
+                                // Fallback: draw brick pattern
+                                ctx.fillStyle = '#5d4e37';
+                                ctx.fillRect(screenX, screenY, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                                ctx.strokeStyle = '#3d2e17';
+                                ctx.strokeRect(screenX, screenY, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                            }
+                        } else if (this.map[r][c] === 'O') {
+                            if (waterImg && waterImg.complete) {
+                                ctx.drawImage(waterImg, screenX, screenY, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                            } else {
+                                // Fallback: draw water
+                                ctx.fillStyle = '#3498db';
+                                ctx.fillRect(screenX, screenY, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                                ctx.fillStyle = '#2980b9';
+                                ctx.beginPath();
+                                ctx.arc(screenX + 20, screenY + 20, 10, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ==================== GAME CLASS ====================
+        class Game {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.state = GameState.MENU;
+                this.stage = 1;
+                this.time = 0;
+                this.lastTime = 0;
+                this.keys = {};
+
+                this.images = new ImageLoader();
+                this.loadImages();
+
+                this.images.onReady = () => {
+                    this.setupInput();
+                    this.gameLoop(0);
+                };
+            }
+
+            loadImages() {
+                this.images
+                    .load('player1', 'images/player.png')
+                    .load('player2', 'images/player2.png')
+                    .load('wall', 'images/wall2.png')
+                    .load('water', 'images/water.png')
+                    .load('goal', 'images/goal.png')
+                    .load('clock', 'images/clock.png')
+                    .load('welcome', 'images/welcome.png')
+                    .load('gameover_time', 'images/GO.png')
+                    .load('gameover_win', 'images/win.png')
+                    .load('gameover_dead', 'images/dead.jpg');
+            }
+
+            setupInput() {
+                window.addEventListener('keydown', (e) => {
+                    this.keys[e.code] = true;
+                    this.handleKeyDown(e);
+                });
+
+                window.addEventListener('keyup', (e) => {
+                    this.keys[e.code] = false;
+                    this.handleKeyUp(e);
+                });
+            }
+
+            handleKeyDown(e) {
+                switch (e.code) {
+                    case 'Space':
+                        if (this.state === GameState.MENU) {
+                            this.startGame();
+                        }
+                        break;
+                    case 'Enter':
+                        if (this.state !== GameState.MENU && this.state !== GameState.PLAYING) {
+                            if (this.autoAdvanceTimer) {
+                                clearTimeout(this.autoAdvanceTimer);
+                                this.autoAdvanceTimer = null;
+                            }
+                            if (this.state === GameState.STAGE_COMPLETE) {
+                                this.nextStage();
+                            } else {
+                                this.startGame();
+                            }
+                        }
+                        break;
+                    case 'ArrowLeft':
+                    case 'ArrowRight':
+                    case 'ArrowUp':
+                    case 'ArrowDown':
+                    case 'KeyA':
+                    case 'KeyD':
+                    case 'KeyW':
+                    case 'KeyS':
+                        e.preventDefault();
+                        if (this.state === GameState.PLAYING) {
+                            this.setPlayerDirections(e.code);
+                        }
+                        break;
+                }
+            }
+
+            handleKeyUp(e) {
+                if (this.state === GameState.PLAYING && this.playerA && this.playerB) {
+                    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyA', 'KeyD', 'KeyW', 'KeyS'].includes(e.code)) {
+                        this.playerA.nextDirection = Direction.STILL;
+                        this.playerB.nextDirection = Direction.STILL;
+                    }
+                }
+            }
+
+            setPlayerDirections(keyCode) {
+                if (!this.playerA || !this.playerB) return;
+
+                switch (keyCode) {
+                    case 'ArrowLeft':
+                    case 'KeyA':
+                        this.playerA.nextDirection = Direction.LEFT;
+                        this.playerB.nextDirection = Direction.RIGHT;
+                        break;
+                    case 'ArrowRight':
+                    case 'KeyD':
+                        this.playerA.nextDirection = Direction.RIGHT;
+                        this.playerB.nextDirection = Direction.LEFT;
+                        break;
+                    case 'ArrowUp':
+                    case 'KeyW':
+                        this.playerA.nextDirection = Direction.UP;
+                        this.playerB.nextDirection = Direction.DOWN;
+                        break;
+                    case 'ArrowDown':
+                    case 'KeyS':
+                        this.playerA.nextDirection = Direction.DOWN;
+                        this.playerB.nextDirection = Direction.UP;
+                        break;
+                }
+            }
+
+            startGame() {
+                this.state = GameState.PLAYING;
+                this.maze = new Maze(this.stage);
+                this.playerA = new Player(60, 60, 1, this.maze);
+                this.playerB = new Player(740, 460, 2, this.maze);
+                this.time = CONFIG.GAME_TIMES[this.stage - 1] || 60;
+                this.lastTime = performance.now();
+            }
+
+            nextStage() {
+                this.stage++;
+                if (this.stage > MAZES.length) {
+                    this.stage = 1; // Loop back to first stage
+                }
+                this.startGame();
+            }
+
+            update(deltaTime) {
+                if (this.state !== GameState.PLAYING) return;
+
+                // Update time
+                this.time -= deltaTime / 1000;
+                if (this.time <= 0) {
+                    this.state = GameState.GAMEOVER_TIME;
+                    return;
+                }
+
+                // Update players
+                this.playerA.update();
+                this.playerB.update();
+
+                // Check if players reached goal (center at 400, 260)
+                if (Math.abs(this.playerA.x - 380) < 10 && Math.abs(this.playerA.y - 260) < 10 &&
+                    Math.abs(this.playerB.x - 420) < 10 && Math.abs(this.playerB.y - 260) < 10) {
+                    this.state = GameState.STAGE_COMPLETE;
+                    return;
+                }
+
+                // Check if any player is dead
+                if (this.playerA.isDead() || this.playerB.isDead()) {
+                    this.state = GameState.GAMEOVER_DEAD;
+                }
+            }
+
+            draw() {
+                const ctx = this.ctx;
+
+                // Clear canvas
+                ctx.fillStyle = '#2c3e50';
+                ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+
+                // Draw header area
+                ctx.fillStyle = '#34495e';
+                ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.MAZE_OFFSET_Y);
+
+                switch (this.state) {
+                    case GameState.MENU:
+                        this.drawMenu();
+                        break;
+                    case GameState.PLAYING:
+                        this.drawGame();
+                        break;
+                    case GameState.GAMEOVER_TIME:
+                        this.drawGame();
+                        this.drawOverlay('gameover_time');
+                        break;
+                    case GameState.GAMEOVER_DEAD:
+                        this.drawGame();
+                        this.drawOverlay('gameover_dead');
+                        break;
+                    case GameState.STAGE_COMPLETE:
+                        this.drawGame();
+                        this.drawOverlay('gameover_win');
+                        break;
+                }
+            }
+
+            drawMenu() {
+                const ctx = this.ctx;
+                const img = this.images.get('welcome');
+                if (img && img.complete) {
+                    ctx.drawImage(img, (CONFIG.CANVAS_WIDTH - img.width) / 2, (CONFIG.CANVAS_HEIGHT - img.height) / 2);
+                } else {
+                    // Fallback menu
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 48px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('COUPLE', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2 - 50);
+                    ctx.font = '24px Arial';
+                    ctx.fillText('A Two-Player Maze Game', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2);
+                    ctx.font = '20px Arial';
+                    ctx.fillStyle = '#f1c40f';
+                    ctx.fillText('Press SPACE to Start', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2 + 60);
+                }
+            }
+
+            drawGame() {
+                const ctx = this.ctx;
+
+                // Draw maze
+                if (this.maze) {
+                    this.maze.draw(ctx, this.images);
+                }
+
+                // Draw goal
+                const goalImg = this.images.get('goal');
+                const goalX = 400;
+                const goalY = 260;
+                if (goalImg && goalImg.complete) {
+                    ctx.drawImage(goalImg, goalX - 40, CONFIG.CANVAS_HEIGHT - goalY - 60, 80, 40);
+                } else {
+                    ctx.fillStyle = '#f1c40f';
+                    ctx.fillRect(goalX - 40, CONFIG.CANVAS_HEIGHT - goalY - 60, 80, 40);
+                }
+
+                // Draw players
+                if (this.playerA) this.playerA.draw(ctx, this.images);
+                if (this.playerB) this.playerB.draw(ctx, this.images);
+
+                // Draw UI
+                this.drawUI();
+            }
+
+            drawUI() {
+                const ctx = this.ctx;
+
+                // Stage label
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(`Stage: ${this.stage}`, 20, 28);
+
+                // Clock icon and time
+                const clockImg = this.images.get('clock');
+                if (clockImg && clockImg.complete) {
+                    ctx.drawImage(clockImg, CONFIG.CANVAS_WIDTH - 100, 5, 30, 30);
+                }
+
+                ctx.textAlign = 'right';
+                const timeColor = this.time < 10 ? '#e74c3c' : '#fff';
+                ctx.fillStyle = timeColor;
+                ctx.font = 'bold 28px Arial';
+                ctx.fillText(Math.ceil(this.time).toString(), CONFIG.CANVAS_WIDTH - 20, 30);
+            }
+
+            drawOverlay(imageName) {
+                const ctx = this.ctx;
+                const img = this.images.get(imageName);
+
+                // Semi-transparent background
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+
+                if (img && img.complete) {
+                    ctx.drawImage(img, (CONFIG.CANVAS_WIDTH - img.width) / 2, (CONFIG.CANVAS_HEIGHT - img.height) / 2);
+                }
+
+                // Instructions
+                ctx.fillStyle = '#f1c40f';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+
+                if (this.state === GameState.STAGE_COMPLETE) {
+                    ctx.fillText('Press ENTER for next stage', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT - 50);
+
+                    // Auto-advance after 2 seconds
+                    if (!this.autoAdvanceTimer) {
+                        this.autoAdvanceTimer = setTimeout(() => {
+                            this.nextStage();
+                            this.autoAdvanceTimer = null;
+                        }, 2000);
+                    }
+                } else {
+                    ctx.fillText('Press ENTER to restart', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT - 50);
+                    this.autoAdvanceTimer = null;
+                }
+            }
+
+            gameLoop(currentTime) {
+                const deltaTime = currentTime - this.lastTime;
+                this.lastTime = currentTime;
+
+                this.update(deltaTime);
+                this.draw();
+
+                requestAnimationFrame((t) => this.gameLoop(t));
+            }
+        }
+
+        // ==================== INITIALIZE GAME ====================
+        window.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('game');
+            new Game(canvas);
+        });
+
+    })();
+    </script>
 </body>
 </html>
