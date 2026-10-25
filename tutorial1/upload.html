@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Upload Stage — Couple Cooperative Maze Game</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💑</text></svg>">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main class="app-shell upload-shell">
+        <!-- Top Navigation Bar -->
+        <header class="hud-bar" aria-label="Stage Upload Navigation">
+            <div class="hud-left">
+                <a href="index.html" class="brand-mark brand-link">Couple</a>
+                <span class="hud-stage-name upload-page-title">Stage Creator &amp; Upload</span>
+            </div>
+
+            <div class="hud-center upload-status-center">
+                <span id="headerStatusBadge" class="overlay-badge" data-tone="info">Awaiting Verification</span>
+            </div>
+
+            <div class="hud-actions">
+                <a href="index.html" class="hud-btn">← Back to Game</a>
+            </div>
+        </header>
+
+        <!-- Main Two-Column Upload & Verification Grid -->
+        <div class="upload-layout">
+            <!-- LEFT PANEL: Stage Input (Visual Grid + File Upload + Raw Text) -->
+            <section class="upload-panel" aria-labelledby="editorHeading">
+                <div class="panel-header">
+                    <div>
+                        <h2 id="editorHeading" class="panel-title">1. Design or Upload Stage</h2>
+                        <p class="panel-subtitle">Paint tiles on the 20×13 grid, upload a <code>.txt</code> / <code>.json</code> file, or paste ASCII rows.</p>
+                    </div>
+                </div>
+
+                <!-- Stage Name & Template Row -->
+                <div class="form-row">
+                    <label class="form-field">
+                        <span class="field-label">Stage Name</span>
+                        <input id="stageNameInput" type="text" class="text-input" value="Mirror Sanctuary" maxlength="36" placeholder="e.g., Mirror Sanctuary">
+                    </label>
+
+                    <label class="form-field">
+                        <span class="field-label">Load Preset / Template</span>
+                        <select id="templateSelect" class="text-input">
+                            <option value="starter">Starter Solvable Maze</option>
+                            <option value="open">Open Courtyard (Minimal Walls)</option>
+                            <option value="stage1">Built-in Stage 1 (Mirror Courtyard)</option>
+                            <option value="stage2">Built-in Stage 2 (Twin Corridors)</option>
+                            <option value="unsolvable">Unsolvable Demo (Blocked Goal)</option>
+                        </select>
+                    </label>
+                </div>
+
+                <!-- Brush Toolbar -->
+                <div class="brush-toolbar" role="toolbar" aria-label="Tile Brush Selector">
+                    <div class="brush-group">
+                        <button type="button" class="brush-btn is-active" data-brush="#">
+                            <span class="swatch swatch-wall"></span> Wall (<code>#</code>)
+                        </button>
+                        <button type="button" class="brush-btn" data-brush=".">
+                            <span class="swatch swatch-floor"></span> Floor (<code>.</code>)
+                        </button>
+                        <button type="button" class="brush-btn" data-brush="O">
+                            <span class="swatch swatch-water"></span> Water (<code>O</code>)
+                        </button>
+                    </div>
+
+                    <div class="brush-tools">
+                        <label class="symmetry-toggle" title="Paint opposite mirrored tiles simultaneously">
+                            <input id="chkSymmetry" type="checkbox" checked>
+                            <span>180° Mirror Brush</span>
+                        </label>
+                        <button id="btnClearInterior" type="button" class="hud-btn">Clear Interior</button>
+                    </div>
+                </div>
+
+                <!-- Interactive 20x13 Visual Grid -->
+                <div class="visual-grid-wrapper">
+                    <div id="visualGrid" class="visual-grid" role="grid" aria-label="20 by 13 Stage Grid Editor"></div>
+                    <div class="grid-legend">
+                        <span><i class="legend-dot dot-p1"></i> <strong>P1</strong> Spawn (12, 2)</span>
+                        <span><i class="legend-dot dot-p2"></i> <strong>P2</strong> Spawn (2, 19)</span>
+                        <span><i class="legend-dot dot-goal"></i> <strong>Goal</strong> Center (7, 10–11)</span>
+                        <span> Border walls are locked</span>
+                    </div>
+                </div>
+
+                <!-- File Upload & Raw ASCII Paste -->
+                <div class="io-section">
+                    <div class="io-header">
+                        <span class="field-label">Upload Stage File (<code>.txt</code> / <code>.json</code>) or Edit Raw ASCII (13 rows × 20 cols)</span>
+                        <div class="io-actions">
+                            <label for="stageFileInput" class="hud-btn file-upload-label">Choose File…</label>
+                            <input id="stageFileInput" type="file" accept=".txt,.json" class="sr-only">
+                            <button id="btnExportTxt" type="button" class="hud-btn" title="Download stage as .txt">Export .txt</button>
+                            <button id="btnExportJson" type="button" class="hud-btn" title="Download stage as .json">Export .json</button>
+                        </div>
+                    </div>
+
+                    <textarea id="rawMapInput" class="raw-map-textarea" rows="13" spellcheck="false" aria-label="Raw 20x13 ASCII Maze Map"></textarea>
+                    <div class="io-footer">
+                        <span id="fileUploadStatus" class="io-status-text">Characters: <code>#</code> = Wall, <code>.</code> = Floor, <code>O</code> = Water</span>
+                        <button id="btnApplyRawText" type="button" class="hud-btn">Apply Text to Grid</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: Solvability Verification, Playtest & Submit -->
+            <section class="upload-panel" aria-labelledby="verifyHeading">
+                <div class="panel-header">
+                    <div>
+                        <h2 id="verifyHeading" class="panel-title">2. Solvability Test &amp; Submit</h2>
+                        <p class="panel-subtitle">Every stage must pass the automated BFS solver and be cleared in the test arena before submitting.</p>
+                    </div>
+                    <button id="btnRunSolver" type="button" class="hud-btn hud-btn-accent">Re-Run Solver</button>
+                </div>
+
+                <!-- 3-Step Verification Checklist -->
+                <div class="verification-checklist" role="status" aria-live="polite">
+                    <div id="checkStructureCard" class="verify-step" data-status="pending">
+                        <div class="verify-icon" id="checkStructureIcon">•</div>
+                        <div class="verify-body">
+                            <div class="verify-title">Grid Structure &amp; Spawn/Goal Check</div>
+                            <div id="checkStructureDesc" class="verify-desc">Checking 20×13 dimensions, border walls, and spawn/goal tiles…</div>
+                        </div>
+                    </div>
+
+                    <div id="checkSolverCard" class="verify-step" data-status="pending">
+                        <div class="verify-icon" id="checkSolverIcon">•</div>
+                        <div class="verify-body">
+                            <div class="verify-title">Automated BFS Mirrored-Movement Solver</div>
+                            <div id="checkSolverDesc" class="verify-desc">Verifying a hazard-free path exists for both players…</div>
+                        </div>
+                    </div>
+
+                    <div id="checkPlaytestCard" class="verify-step" data-status="pending">
+                        <div class="verify-icon" id="checkPlaytestIcon">•</div>
+                        <div class="verify-body">
+                            <div class="verify-title">Interactive Playtest Verification</div>
+                            <div id="checkPlaytestDesc" class="verify-desc">Guide P1 &amp; P2 to the central goal below (or run the verified solution) to unlock submission.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Playtest Canvas -->
+                <div class="playtest-container">
+                    <div class="playtest-toolbar">
+                        <span id="playtestStatusText" class="playtest-status-label">Playtest Arena — Use WASD / Arrow Keys or D-Pad</span>
+                        <div class="playtest-actions">
+                            <button id="btnAutoSolve" type="button" class="hud-btn" title="Watch the BFS optimal path play out on the canvas">Demo BFS Solution</button>
+                            <button id="btnResetTest" type="button" class="hud-btn" title="Reset players to starting positions (R)">Reset Test (R)</button>
+                        </div>
+                    </div>
+
+                    <div class="stage-viewport test-viewport">
+                        <canvas id="testCanvas" width="800" height="520"></canvas>
+                        <div id="playtestBanner" class="playtest-toast is-hidden"></div>
+                    </div>
+
+                    <div class="playtest-controls-bar">
+                        <div class="controls-legend">
+                            <span><kbd>WASD</kbd> / <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> Move Couple</span>
+                            <span>·</span>
+                            <span><kbd>R</kbd> Reset Test</span>
+                        </div>
+                        <div class="dpad-cluster dpad-compact" role="group" aria-label="Playtest Directional Pad">
+                            <button type="button" class="dpad-btn" data-dpad-dir="up" aria-label="Move Up">↑</button>
+                            <button type="button" class="dpad-btn" data-dpad-dir="left" aria-label="Move Left">←</button>
+                            <button type="button" class="dpad-btn" data-dpad-dir="down" aria-label="Move Down">↓</button>
+                            <button type="button" class="dpad-btn" data-dpad-dir="right" aria-label="Move Right">→</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Action Box -->
+                <div class="submit-box">
+                    <div class="submit-info">
+                        <div id="submitHelperText" class="submit-helper">
+                            Complete both the BFS solvability check and interactive playtest to enable stage submission.
+                        </div>
+                    </div>
+                    <button id="btnSubmitStage" type="button" class="btn-primary btn-submit-stage" disabled>
+                        Submit Verified Stage
+                    </button>
+                </div>
+
+                <div id="submitSuccessBanner" class="submit-success-banner is-hidden" role="alert"></div>
+
+                <!-- Saved Custom Stages List -->
+                <div class="custom-stages-section">
+                    <div class="io-header">
+                        <span class="field-label">Submitted Custom Stages</span>
+                        <span id="customStageCount" class="verify-desc">0 stages saved</span>
+                    </div>
+                    <div id="customStagesList" class="custom-stages-list"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script type="module" src="src/upload.js"></script>
+</body>
+</html>
